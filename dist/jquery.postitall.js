@@ -416,33 +416,7 @@ var delay = (function(){
                                 if (file && file.length) {
                                     //Check object
                                     var obj = JSON.parse(file);
-                                    if(typeof obj === 'object') {
-                                        //create new note
-                                        var newNote = function(obj) {
-                                            delete obj.id; //reset id
-                                            //TODO : reset domain&page or redirect?
-                                            delete obj.domain;
-                                            delete obj.page;
-                                            $.PostItAll.new(obj);
-                                        }
-                                        if(obj.id !== undefined) {
-                                            //One note
-                                            newNote(obj);
-                                        } else if($(obj).length > 0) {
-                                            //Various notes
-                                            $(obj).each(function(n1,obj2) {
-                                                if(obj2.id !== undefined) {
-                                                    setTimeout(function() {
-                                                        newNote(obj2);
-                                                    }, 250 + ( n1 * 250 ));
-                                                }
-                                            });
-                                        } else {
-                                            alert('No notes to import');
-                                        }
-                                    } else {
-                                        alert('Invalid file content');
-                                    }
+                                    $.PostItAll.loadJSON(obj);
                                 }
                             });
                         } else {
@@ -462,6 +436,38 @@ var delay = (function(){
                 //Input button
                 var impBut = $('<button />', { id : "idImportUpload", type : "file", name : "files" }).on("click", importFile);
                 updString.append(impFile).append(impBut).prependTo($('body'));
+            }
+        },
+
+        //Load notes from JSON
+        loadJSON: function(obj)
+        {
+            if(typeof obj === 'object') {
+                //create new note
+                var newNote = function(obj) {
+                    delete obj.id; //reset id
+                    //TODO : reset domain&page or redirect?
+                    delete obj.domain;
+                    delete obj.page;
+                    $.PostItAll.new(obj);
+                }
+                if(obj.id !== undefined) {
+                    //One note
+                    newNote(obj);
+                } else if($(obj).length > 0) {
+                    //Various notes
+                    $(obj).each(function(n1,obj2) {
+                        if(obj2.id !== undefined) {
+                            setTimeout(function() {
+                                newNote(obj2);
+                            }, 250 + ( n1 * 250 ));
+                        }
+                    });
+                } else {
+                    alert('No notes to import');
+                }
+            } else {
+                alert('Invalid file content');
             }
         },
 
@@ -864,16 +870,32 @@ var delay = (function(){
         },
 
         //Import note
-        import : function() {
-            //Show upload dialog
-            $('#idImportFile').trigger('click');
+        import : function(json) {
+            if (typeof json === 'undefined')
+            {
+                //Show upload dialog
+                $('#idImportFile').trigger('click');
+            }
+            else
+            {
+                //Load postits from provided json
+                $.PostItAll.loadJSON(json);
+            }
         },
 
         //Export note
-        export : function(opt) {
+        //filename: default filename provided to user
+        //format: format of export: 'json' = plain JSON, 'js' = javascript file defining the global variable postits with notes content
+        export : function(opt, filename, format) {
             var obj = null;
             if(typeof opt === 'undefined') {
                 opt = "loaded";
+            }
+            if(typeof filename === 'undefined') {
+                filename = new Date().toFormat("yyyymmdd") + $.fn.postitall.globals.prefix + opt + '.txt';
+            }
+            if(typeof format === 'undefined') {
+                format = 'json'
             }
             if(typeof opt === 'string') {
                 switch(opt) {
@@ -905,11 +927,14 @@ var delay = (function(){
 
                 setTimeout(function() {
                     if(obj != null && (obj.id !== undefined || obj.length > 0)) {
-                        var dat = new Date();
                         //Create element
                         var element = document.createElement('a');
-                        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(obj)));
-                        element.setAttribute('download', dat.toFormat("yyyymmdd") + $.fn.postitall.globals.prefix + opt + '.txt');
+                        var content = JSON.stringify(obj);
+                        if (format === 'js') {
+                            content = 'var postits = '+content+';';
+                        }
+                        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(content));
+                        element.setAttribute('download', filename);
                         element.style.display = 'none';
                         //Append element to body
                         document.body.appendChild(element);
