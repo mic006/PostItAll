@@ -602,8 +602,6 @@ var delay = (function(){
                 opt.posX = optPos.posX + parseInt($.fn.postitall.defaults.posX, 10);
                 opt.posY = optPos.posY + parseInt($.fn.postitall.defaults.posX, 10);
             }
-            opt.posX = parseInt(opt.posX, 10) + "px";
-            opt.posY = parseInt(opt.posY, 10) + "px";
 
             //New note object
             var note = new PostItAll();
@@ -983,9 +981,6 @@ var delay = (function(){
 
             //create stuff
             var newObj = this.create(obj);
-            //Set on resize action
-            if($.fn.postitall.globals.autoPosition && opt.features.autoPosition)
-                $(window).on('resize', $.proxy(this.relativePosition, this));
             //return obj
             return newObj;
         },
@@ -1303,8 +1298,6 @@ var delay = (function(){
                 /*.hide("slow", function () {
                     $(this).remove();
                 });*/
-            if(this.length <= 0)
-                $(window).off('resize');
         },
 
         hide : function(id) {
@@ -1685,11 +1678,6 @@ var delay = (function(){
                     $('html').css('overflow', (tmpOvf != "hidden") ? tmpOvf : "visible" );
                     window.scrollTo(scrollPosition[0], scrollPosition[1]);
                 }
-                $(window).off('resize');
-                //Set on resize action
-                if($.fn.postitall.globals.autoPosition) // && options.features.autoPosition)
-                    $(window).on('resize', $.proxy(t.relativePosition, t));
-
             }
         },
 
@@ -1746,55 +1734,6 @@ var delay = (function(){
                     }
                 }
             }, 500);
-        },
-
-        //On screen resize, notes will preserve relative position to new width screen
-        relativePosition : function(event) {
-            var t = this;
-            if(!$.fn.postitall.globals.autoPosition || !t.options.features.autoPosition) {
-                $(window).off('resize');
-                return;
-            }
-            var obj, options;
-            delay(function(){
-                $('.PIApostit').each(function(i,e) {
-                    obj = $($.fn.postitall.globals.prefix + $(e).data('PIA-id'));
-                    options = $($.fn.postitall.globals.prefix + $(e).data('PIA-id')).data('PIA-options');
-                    //console.log(i,options,obj);
-                    if(options !== undefined && options.attachedTo.element !== undefined && options.attachedTo.element !== "") {
-                        //Attached elements
-                        if(options.attachedTo.fixed !== undefined && options.attachedTo.fixed)
-                            t.attachedTo(options);
-                    } else {
-                        //Floating elements
-                        //console.log('new pos for note ', i, e);
-                        var noteLoc = obj.offset();
-                        var screenLoc = { 'height': $(window).height(), 'width': $(window).width() };
-                        var top = noteLoc.top;
-                        var left = noteLoc.left;
-                        var width = parseInt($(e).css('width'), 10) + parseInt($(e).css('padding-left'), 10) + parseInt($(e).css('padding-right'), 10);
-                        var height = parseInt($(e).css('height'), 10) + parseInt($(e).css('padding-top'), 10) + parseInt($(e).css('padding-bottom'), 10);
-
-                        var x1 = left, x2 = (left + width), y1 = top, y2 = (top + height);
-                        var relTop = (y1 / screenLoc.height) * 100;
-                        var relLeft = (x1 / screenLoc.width) * 100;
-                        var relWidth = ((x2 - x1) / screenLoc.width) * 100;
-                        var relHeight = ((y2 - y1) / screenLoc.height) * 100;
-
-                        $(e).css({
-                            //'top': relTop + "%",
-                            'left': relLeft + "%",
-                            //'width': relWidth + "%",
-                            //'height': relHeight + "%"
-                        });
-                        options.posX = obj.offset().left;
-                    }
-                    //Save
-                    obj.data('PIA-options', options);
-                    //console.log('options', options);
-                });
-                //$.PostItAll.save();
-            }, 100);
         },
 
         //Save current note position in options.oldPosition
@@ -2667,9 +2606,14 @@ var delay = (function(){
             if (options.position === "relative") {
                 options.position = "absolute";
                 options.posY = obj.offset().top + parseInt(options.posY, 10);
-                options.posY += "px";
                 options.posX = obj.offset().left + parseInt(options.posX, 10);
-                options.posX += "px";
+            }
+
+            if($.fn.postitall.globals.autoPosition && options.features.autoPosition) {
+                //autoPosition: keep posX as a % value
+                if (typeof options.posX !== 'string' || options.posX.indexOf('%') < 0) {
+                    options.posX = options.posX/$(window).width()*100 + "%";
+                }
             }
 
             //Arrow
@@ -2718,7 +2662,7 @@ var delay = (function(){
                 obj.css('right', options.right);
                 //options.right = "";
             } else {
-                obj.css('left', options.posX)
+                obj.css('left', options.posX);
             }
             if (options.style.textshadow) {
                 obj.addClass(t.getTextShadowStyle(options.style.textcolor));
@@ -2858,7 +2802,13 @@ var delay = (function(){
                             //if ($.fn.postitall.globals.savable && options.features.savable) {
                                 if(!options.flags.minimized) {
                                     options.posY = obj.css('top');
-                                    options.posX = obj.css('left');
+                                    if($.fn.postitall.globals.autoPosition && options.features.autoPosition) {
+                                        //autoPosition: keep posX as a % value
+                                        options.posX = 100*parseInt(obj.css('left'))/$(window).width()+"%";
+                                        obj.css('left', options.posX);
+                                    } else {
+                                        options.posX = obj.css('left');
+                                    }
                                     options.oldPosition.leftMinimized = undefined;
                                 } else {
                                     options.oldPosition.leftMinimized = obj.css('left');
@@ -2903,7 +2853,13 @@ var delay = (function(){
                                 options.right = '';
                                 //if ($.fn.postitall.globals.savable && options.features.savable) {
                                     options.posY = obj.css('top');
-                                    options.posX = obj.css('left');
+                                    if($.fn.postitall.globals.autoPosition && options.features.autoPosition) {
+                                        //autoPosition: keep posX as a % value
+                                        options.posX = 100*parseInt(obj.css('left'))/$(window).width()+"%";
+                                        obj.css('left', options.posX);
+                                    } else {
+                                        options.posX = obj.css('left');
+                                    }
                                     t.autoresize();
                                     t.saveOptions(options);
                                 //}
