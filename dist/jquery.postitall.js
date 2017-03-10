@@ -2356,8 +2356,6 @@ var delay = (function(){
                         e.preventDefault();
                     })
                 );
-            } else {
-                options.flags.hidden = false;
             }
 
             //MINIMIZE
