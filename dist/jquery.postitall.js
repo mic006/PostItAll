@@ -372,6 +372,8 @@ var delay = (function(){
     $.fn.postitall.defaultscopy.flags = $.extend({}, $.fn.postitall.defaults.flags, true);
     $.fn.postitall.defaultscopy.attachedTo = $.extend({}, $.fn.postitall.defaults.attachedTo, true);
 
+    var dirty = false; // whether there is some pending changes done by user and not saved (exported)
+
     //Global functions
     jQuery.PostItAll = {
 
@@ -454,6 +456,7 @@ var delay = (function(){
                 if(obj.id !== undefined) {
                     //One note
                     newNote(obj);
+                    dirty = false; // just loaded, clean
                 } else if($(obj).length > 0) {
                     //Various notes
                     $(obj).each(function(n1,obj2) {
@@ -461,6 +464,7 @@ var delay = (function(){
                             newNote(obj2);
                         }
                     });
+                    dirty = false; // just loaded, clean
                 } else {
                     alert('No notes to import');
                 }
@@ -651,6 +655,7 @@ var delay = (function(){
                     setTimeout(function() { note.init(obj, options); if(callback !== undefined) callback($.fn.postitall.globals.prefix + options.id, options, obj[0]); }, 100);
                 });
             }
+            dirty = true; // new post-it created
         },
 
         options : function(id, opt) {
@@ -938,13 +943,19 @@ var delay = (function(){
                         element.click();
                         //Remove temporal element
                         document.body.removeChild(element);
+                        dirty = false; // post-its saved
                     } else {
                         alert('No notes to export');
                         console.log(obj);
                     }
                 }, 250);
             }
-        }
+        },
+
+        //Content to export: whether some changes has been done and not exported
+        contentToExport : function() {
+            return dirty;
+        },
     };
 
     //Note class
@@ -1277,6 +1288,7 @@ var delay = (function(){
             if(callOnDelete) {
                 options.onDelete($.fn.postitall.globals.prefix + id);
             }
+            dirty = true; // post-it deleted
         },
 
         //Hide note
@@ -1364,6 +1376,7 @@ var delay = (function(){
             this.hideArrow(index);
             this.showArrow(index, options);
             this.saveOptions(options);
+            dirty = true; // post-it modified
             return options;
         },
 
@@ -2760,6 +2773,7 @@ var delay = (function(){
                         options.onChange($.fn.postitall.globals.prefix + index);
                         //TODO : Validar que no es propaguen les tecles a l'aplicacio nativa
                         e.preventDefault();
+                        dirty = true; // post-it content modified
                     }, 100);
                 }
                 return objeto;
@@ -2810,6 +2824,7 @@ var delay = (function(){
                                     options.oldPosition.leftMinimized = obj.css('left');
                                 }
                                 t.saveOptions(options);
+                                dirty = true; // post-it moved
                             //}
                             if(!options.flags.minimized) {
                                 t.switchTrasparentNoteOff();
@@ -2858,6 +2873,7 @@ var delay = (function(){
                                     }
                                     t.autoresize();
                                     t.saveOptions(options);
+                                    dirty = true; // post-it resized
                                 //}
                                 //onRelease event
                                 options.onRelease($.fn.postitall.globals.prefix + options.id);
@@ -2952,6 +2968,7 @@ var delay = (function(){
                             options.style.textshadow = false;
                         }
                         t.setOptions(options, true);
+                        dirty = true; // style changed
                     });
                     //3d or plain
                     $('#generalstyle_' + index).click(function () {
@@ -2963,6 +2980,7 @@ var delay = (function(){
                             options.style.tresd = false;
                         }
                         t.setOptions(options, true);
+                        dirty = true; // style changed
                     });
                     //Background and text color
                     if ($.minicolors) {
@@ -2975,6 +2993,7 @@ var delay = (function(){
                                 //$($.fn.postitall.globals.prefix + index).css('opacity', rgb);
                                 options.style.backgroundcolor = hex;
                                 t.setOptions(options, true);
+                                dirty = true; // color changed
                             }
                         });
                         //Config: text color
@@ -2983,6 +3002,7 @@ var delay = (function(){
                                 $($.fn.postitall.globals.prefix + index).css('color', hex);
                                 options.style.textcolor = hex;
                                 t.setOptions(options, true);
+                                dirty = true; // color changed
                             }
                         });
                     } else {
@@ -2990,11 +3010,13 @@ var delay = (function(){
                             $(this).closest('.PIApostit').css('background-color', $(this).val());
                             options.style.backgroundcolor = $(this).val();
                             t.setOptions(options, true);
+                            dirty = true; // color changed
                         });
                         $('#minicolors_text_' + index).change(function () {
                             $(this).closest('.PIApostit').css('color', $(this).val());
                             options.style.textcolor = $(this).val();
                             t.setOptions(options, true);
+                            dirty = true; // color changed
                         });
                     }
 
