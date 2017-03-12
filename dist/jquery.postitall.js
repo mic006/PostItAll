@@ -458,9 +458,7 @@ var delay = (function(){
                     //Various notes
                     $(obj).each(function(n1,obj2) {
                         if(obj2.id !== undefined) {
-                            setTimeout(function() {
-                                newNote(obj2);
-                            }, 250 + ( n1 * 250 ));
+                            newNote(obj2);
                         }
                     });
                 } else {
@@ -1305,7 +1303,7 @@ var delay = (function(){
             if($($.fn.postitall.globals.prefix + id).length) {
                 var options = $($.fn.postitall.globals.prefix + id).data('PIA-options');
                 options.flags.hidden = true;
-                $($.fn.postitall.globals.prefix + id).slideUp();
+                $($.fn.postitall.globals.prefix + id).slideUp(200);
                 this.saveOptions(options);
             }
         },
@@ -1316,7 +1314,7 @@ var delay = (function(){
                 var options = $($.fn.postitall.globals.prefix + id).data('PIA-options');
                 options.flags.hidden = false;
                 options.features.hideUntil = null;
-                $($.fn.postitall.globals.prefix + id).slideDown();
+                $($.fn.postitall.globals.prefix + id).slideDown(200);
                 this.saveOptions(options);
             }
         },
@@ -2941,7 +2939,7 @@ var delay = (function(){
 
             //Show postit
             if(!options.flags.hidden) {
-                obj.slideDown(function () {
+                obj.slideDown(200, function () {
                     //Rest of actions
                     //Config: text shadow
                     $('#textshadow_' + index).click(function () {
@@ -3006,8 +3004,6 @@ var delay = (function(){
             } else {
                 if(options.features.hideUntil !== null)
                     t.showAgain(index, options.features.hideUntil);
-                else
-                    console.log('estic amagat sense data de fi', options.features);
 
             }
 
