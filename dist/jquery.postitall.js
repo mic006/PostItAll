@@ -372,6 +372,8 @@ var delay = (function(){
     $.fn.postitall.defaultscopy.flags = $.extend({}, $.fn.postitall.defaults.flags, true);
     $.fn.postitall.defaultscopy.attachedTo = $.extend({}, $.fn.postitall.defaults.attachedTo, true);
 
+    $.fn.postitall.markdownRender = null; //Function to render note content as markdown (ex: remarkable)
+
     var dirty = false; // whether there is some pending changes done by user and not saved (exported)
 
     //Global functions
@@ -2435,40 +2437,57 @@ var delay = (function(){
                 //Reset herisated contenteditable styles
                 //color:'+options.style.textcolor+';min-width:99%;
                 'style': 'width: auto;height: auto;padding: 10px;border-color: transparent;min-width:' + (options.minWidth) + 'px;box-shadow:none;min-height:' + (options.minHeight - 100) + 'px;'
-            }).change(function (e) {
-                if(!$.fn.postitall.globals.editable || !options.features.editable) {
-                    return;
-                }
-
-                var oldContent = options.content;
-
-                //Html format
-                var text = $(this).text();
-                if ($.fn.postitall.globals.pasteHtml || options.features.pasteHtml) {
-                    text = $(this).html();
-                    //Default sanitize
-                    text = text.replace(/<script[^>]*?>.*?<\/script>/gi, '').
-                                 //replace(/<[\/\!]*?[^<>]*?>/gi, '').
-                                 replace(/<style[^>]*?>.*?<\/style>/gi, '').
-                                 replace(/<![\s\S]*?--[ \t\n\r]*>/gi, '');
-                    //htmlClean sanitize plugin
-                    if($.htmlClean !== undefined) {
-                        //htmlClean plugin
-                        text = $.htmlClean(text, { format: true });
+            });
+            if ($.fn.postitall.markdownRender === null) {
+                content.change(function (e) {
+                    if(!$.fn.postitall.globals.editable || !options.features.editable) {
+                        return;
                     }
-                }
-                t.options.content = text;
-                t.autoresize();
-                t.save(obj, function(error) {
-                    if(error !== undefined && error !== "") {
-                        alert('Error saving content! \n\n'+error+'\n\nReverting to last known content.');
-                        t.options.content = oldContent;
-                        $('#pia_editable_' + t.options.id).html(oldContent);
-                        $('#pia_editable_' + t.options.id).trigger('change');
-                        t.autoresize();
+
+                    var oldContent = options.content;
+
+                    //Html format
+                    var text = $(this).text();
+                    if ($.fn.postitall.globals.pasteHtml || options.features.pasteHtml) {
+                        text = $(this).html();
+                        //Default sanitize
+                        text = text.replace(/<script[^>]*?>.*?<\/script>/gi, '').
+                                    //replace(/<[\/\!]*?[^<>]*?>/gi, '').
+                                    replace(/<style[^>]*?>.*?<\/style>/gi, '').
+                                    replace(/<![\s\S]*?--[ \t\n\r]*>/gi, '');
+                        //htmlClean sanitize plugin
+                        if($.htmlClean !== undefined) {
+                            //htmlClean plugin
+                            text = $.htmlClean(text, { format: true });
+                        }
                     }
+                    t.options.content = text;
+                    t.autoresize();
+                    t.save(obj, function(error) {
+                        if(error !== undefined && error !== "") {
+                            alert('Error saving content! \n\n'+error+'\n\nReverting to last known content.');
+                            t.options.content = oldContent;
+                            $('#pia_editable_' + t.options.id).html(oldContent);
+                            $('#pia_editable_' + t.options.id).trigger('change');
+                            t.autoresize();
+                        }
+                    });
+                }).html(t.options.content);
+            } else {
+                // display with markdown render
+                // use innerText, from http://www.davidtong.me/innerhtml-innertext-textcontent-html-and-text/
+                content.html($.fn.postitall.markdownRender(t.options.content));
+                content.focusin(function() {
+                    // edit the raw content
+                    $(this).innerText(t.options.content);
                 });
-            }).html(t.options.content);
+                content.focusout(function() {
+                    // save the raw content
+                    t.options.content = $(this).innerText();
+                    // display with markdown render
+                    $(this).html($.fn.postitall.markdownRender(t.options.content));
+                });
+            }
 
             if($.fn.postitall.globals.editable && options.features.editable) {
                 content.attr('contenteditable', true);
