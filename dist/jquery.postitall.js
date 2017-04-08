@@ -2436,7 +2436,7 @@ var delay = (function(){
                 'class': 'PIAeditable PIAcontent',
                 //Reset herisated contenteditable styles
                 //color:'+options.style.textcolor+';min-width:99%;
-                'style': 'width: auto;height: auto;padding: 10px;border-color: transparent;min-width:' + (options.minWidth) + 'px;box-shadow:none;min-height:' + (options.minHeight - 100) + 'px;'
+                'style': 'width: auto;height: auto;padding: 0 10px 0 10px;border-color: transparent;min-width:' + (options.minWidth) + 'px;box-shadow:none;min-height:' + (options.minHeight - 100) + 'px;'
             });
             if ($.fn.postitall.markdownRender === null) {
                 content.change(function (e) {
